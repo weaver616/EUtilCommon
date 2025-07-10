@@ -1,7 +1,7 @@
 #include <stdafx.h>
 #include <string>
 #include <vector>
-#include <MultipartRequestBuilder.h>
+#include <multipartRequestBuilder.h>
 #include <EcodeUtil.h>
 
 #pragma region url初始化
@@ -21,12 +21,12 @@ void MultipartRequestBuilder::addHeader(const CString &header)
     headers_.push_back(to_stdstring(header));
 }
 
-void MultipartRequestBuilder::setSilent(bool silent )
+void MultipartRequestBuilder::setSilent(bool silent)
 {
     silent_ = silent;
 }
 
-void MultipartRequestBuilder::addFile(const CString &fieldName, const CString &filePath, bool needMD5 )
+void MultipartRequestBuilder::addFile(const CString &fieldName, const CString &filePath, bool needMD5)
 {
     files_.emplace_back(to_stdstring(fieldName), to_stdstring(filePath));
     if (needMD5)
@@ -39,12 +39,12 @@ std::string MultipartRequestBuilder::buildCommand() const
 {
     std::string cmd = "curl -X POST";
     if (silent_)
-        // cmd += " -s";
+        cmd += " -s";
 
-        for (const auto &header : headers_)
-        {
-            cmd += " -H \"" + header + "\"";
-        }
+    for (const auto &header : headers_)
+    {
+        cmd += " -H \"" + header + "\"";
+    }
 
     for (const auto &kv : fields_)
     {
@@ -70,7 +70,7 @@ std::vector<std::string> MultipartRequestBuilder::getMd5FileList() const
 
 // int main()
 // {
-    
+
 //     MultipartRequestBuilder builder;
 
 //     builder.setUrl("http://eplattest.baosteelmetal.info/bmbmms-service-jk/contract/contractFileUpload");
