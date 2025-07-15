@@ -10,6 +10,7 @@
 #include "jsonRequestBuilder.h"
 #include <EcodeUtil.h>
 #include <EIClassBuilder.h>
+#include <ELog.h>
 
 namespace
 {
@@ -18,64 +19,64 @@ namespace
 
     std::string shellEscape(const std::string &input)
     {
-        // ¿Õ×Ö·û´®´¦Àí
+        // ç©ºå­—ç¬¦ä¸²å¤„ç†
         if (input.empty())
             return "''";
 
-        // ¼ì²éÊÇ·ñĞèÒª×ªÒå£¨¼ì²éÌØÊâ×Ö·û£©
+        // æ£€æŸ¥æ˜¯å¦éœ€è¦è½¬ä¹‰ï¼ˆæ£€æŸ¥ç‰¹æ®Šå­—ç¬¦ï¼‰
         bool needsEscape = false;
         for (char c : input )
         {
             if (!std::isalnum(static_cast<unsigned char>(c)) )
             {
-                    switch (c)
+                switch (c)
+                {
+                case '-':
+                case '_':
+                case '.':
+                case '/':
+                case ':':
+                case '@':
+                case '=':
+                case '?':
+                case '&':
+                case '%':
+                case '+':
+                case ',':
+                case ';':
+                case '~':
+                case '*':
+                case '!':
+                case '#':
+                case '$':
+                case '^':
+                case '(':
+                case ')':
+                case '{':
+                case '}':
+                case '[':
+                case ']':
+                case '<':
+                case '>':
+                case '|':
+                case '`':
+                case '\\':
+                case '\'':
+                case '"':
+                case ' ':
+                case '\t':
+                case '\n':
+                case '\r':
+                    needsEscape = true;
+                    break;
+                default:
+
+                    if (static_cast<unsigned char>(c) < 0x20)
                     {
-                    case '-':
-                    case '_':
-                    case '.':
-                    case '/':
-                    case ':':
-                    case '@':
-                    case '=':
-                    case '?':
-                    case '&':
-                    case '%':
-                    case '+':
-                    case ',':
-                    case ';':
-                    case '~':
-                    case '*':
-                    case '!':
-                    case '#':
-                    case '$':
-                    case '^':
-                    case '(':
-                    case ')':
-                    case '{':
-                    case '}':
-                    case '[':
-                    case ']':
-                    case '<':
-                    case '>':
-                    case '|':
-                    case '`':
-                    case '\\':
-                    case '\'':
-                    case '"':
-                    case ' ':
-                    case '\t':
-                    case '\n':
-                    case '\r':
                         needsEscape = true;
-                        break;
-                    default:
-                     
-                        if (static_cast<unsigned char>(c) < 0x20)
-                        {
-                            needsEscape = true;
-                        }
-                        break;
                     }
+                    break;
+                }
                     if (needsEscape)
                     {
                         break;
@@ -83,20 +84,20 @@ namespace
             }
         }
     
-        // ²»ĞèÒª×ªÒåµÄÇé¿ö
+        // ä¸éœ€è¦è½¬ä¹‰çš„æƒ…å†µ
         if (!needsEscape)
         {
             return input;
         }
 
-        // Ê¹ÓÃµ¥ÒıºÅ×ªÒå - ÕıÈ·´¦Àíµ¥ÒıºÅ
+        // ä½¿ç”¨å•å¼•å·è½¬ä¹‰ - æ­£ç¡®å¤„ç†å•å¼•å·
         std::ostringstream escaped;
         escaped << '\'';
         for (char c : input)
         {
             if (c == '\'')
             {
-                // µ¥ÒıºÅĞèÒªÌØÊâ´¦Àí: '\'' -> '\'"'"''
+                // å•å¼•å·éœ€è¦ç‰¹æ®Šå¤„ç†: '\'' -> '\'"'"''
                 escaped << "'\\''";
             }
             else
@@ -107,9 +108,9 @@ namespace
         escaped << '\'';
         return escaped.str();
     }
-} // ÄäÃûÃüÃû¿Õ¼ä
+} // åŒ¿åå‘½åç©ºé—´
 
-// ÊµÏÖÀàµÄ¶¨Òå
+// å®ç°ç±»çš„å®šä¹‰
 struct JsonRequestBuilderImpl
 {
     std::string m_url;
@@ -139,32 +140,33 @@ struct JsonRequestBuilderImpl
 
 };
 
-// ¹¹Ôìº¯Êı - Ê¹ÓÃ new ´úÌæ make_unique
+// æ„é€ å‡½æ•° - ä½¿ç”¨ new ä»£æ›¿ make_unique
 JsonRequestBuilder::JsonRequestBuilder()
     : m_impl(new JsonRequestBuilderImpl()) {}
 
-// Îö¹¹º¯Êı - ĞèÒªÏÔÊ½¶¨Òå
+// ææ„å‡½æ•° - éœ€è¦æ˜¾å¼å®šä¹‰
 JsonRequestBuilder::~JsonRequestBuilder()
 {
-    // unique_ptr »á×Ô¶¯É¾³ıÊµÏÖ¶ÔÏó
+    // unique_ptr ä¼šè‡ªåŠ¨åˆ é™¤å®ç°å¯¹è±¡
 }
 
-// ÆäËû³ÉÔ±º¯ÊıÊµÏÖ...
-JsonRequestBuilder &JsonRequestBuilder::setUrl(const std::string &url)
+// å…¶ä»–æˆå‘˜å‡½æ•°å®ç°...
+JsonRequestBuilder &JsonRequestBuilder::setUrl(const CString &url)
 {
     m_impl->m_url = url;
     return *this;
 }
 
-JsonRequestBuilder &JsonRequestBuilder::setJsonBody(const std::string &json)
+JsonRequestBuilder &JsonRequestBuilder::setJsonBody(const CString &cjson)
 {
-        // ÑéÖ¤ JSON ÊÇ·ñÓĞĞ§
+        // éªŒè¯ JSON æ˜¯å¦æœ‰æ•ˆ
+    std::string  json =to_stdstring(cjson);
     rapidjson::Document validationDoc;
     validationDoc.Parse(json.c_str());
     
     if (validationDoc.HasParseError()) 
     {
-        // »ñÈ¡ÏêÏ¸µÄ´íÎóĞÅÏ¢
+        // è·å–è¯¦ç»†çš„é”™è¯¯ä¿¡æ¯
         size_t offset = validationDoc.GetErrorOffset();
         rapidjson::ParseErrorCode code = validationDoc.GetParseError();
         
@@ -186,14 +188,19 @@ JsonRequestBuilder &JsonRequestBuilder::setJsonBody(const std::string &json)
     return *this;
 }
 
-JsonRequestBuilder &JsonRequestBuilder::addHeader(const std::string &key, const std::string &value)
+JsonRequestBuilder &JsonRequestBuilder::addHeader(const CString &ckey, const CString &cvalue)
 {
-    m_impl->m_headers[key] = value;
+    std::string key=to_stdstring(ckey)  ;
+   
+    m_impl->m_headers[key] = to_stdstring(cvalue);
     return *this;
 }
 
-JsonRequestBuilder &JsonRequestBuilder::setJsonField(JType jType, const std::string &key, const std::string &value)
+JsonRequestBuilder &JsonRequestBuilder::setJsonField(JType jType, const CString &Ckey, const CString &cvalue)
 {
+    std::string key=to_stdstring(Ckey);
+    std::string value =to_stdstring(cvalue);
+
     auto &impl = *m_impl;
 
     if (impl.m_typeStack.empty())
@@ -233,7 +240,7 @@ JsonRequestBuilder &JsonRequestBuilder::setJsonField(JType jType, const std::str
     return *this;
 }
 
-std::string JsonRequestBuilder::finalize()
+CString JsonRequestBuilder::finalize()
 {
     auto &impl = *m_impl;
     while (!impl.m_typeStack.empty())
@@ -249,48 +256,39 @@ std::string JsonRequestBuilder::finalize()
     
     impl.m_jsonBody=buffer.GetString();      
     
-    return impl.m_jsonBody;
+    
+    return buffer.GetString();
 }
 
-std::string JsonRequestBuilder::execute()
-{
-    // Êµ¼Ê·¢ËÍHTTPÇëÇóµÄÂß¼­
-    // ÕâÀï·µ»Ø¹¹½¨µÄJSON×÷ÎªÊ¾Àı
-     const auto& impl = *m_impl;
 
-    Process process(impl.m_shellstr);
-    std::string callres=process.readAll();
-
-    std::cout<<callres<<std::endl;
-    return callres;
-}
 
 //server
-void JsonRequestBuilder::buildCommand(const std::string flag)  
+void JsonRequestBuilder::buildCommand(const CString cflag)  
 { 
+    std::string flag=to_stdstring(cflag);  
     GbkToUtf8Strategy gbktoutf8;       
 
     auto& impl = *m_impl;
     std::ostringstream cmd; 
 
     cmd << gbktoutf8.convert("curl -s -S ");     
-    // Ìí¼Ó URL
+    // æ·»åŠ  URL
     if (!impl.m_url.empty()) 
     {         
         cmd << " " << (flag=="server"? gbktoutf8.convert(shellEscape(impl.m_url)) : shellEscape(impl.m_url));
     }
     
-    // Ìí¼ÓÇëÇóÍ·
+    // æ·»åŠ è¯·æ±‚å¤´
     for (const auto &header : impl.m_headers) 
     {
         std::string headerStr = header.first + ": " + header.second;
         cmd << " -H " <<  ( flag=="server"? gbktoutf8.convert(shellEscape(headerStr)) :shellEscape(headerStr));
     }
     
-    // Ìí¼Ó JSON ÇëÇóÌå
+    // æ·»åŠ  JSON è¯·æ±‚ä½“
     if (!impl.m_jsonBody.empty()) 
     {
-        // Ìí¼Ó Content-Type Í·£¨Èç¹ûÎ´ÉèÖÃ£©
+        // æ·»åŠ  Content-Type å¤´ï¼ˆå¦‚æœæœªè®¾ç½®ï¼‰
         bool hasContentType = false;
         for (const auto &header : impl.m_headers) {
             if (header.first == "Content-Type") {
@@ -304,33 +302,31 @@ void JsonRequestBuilder::buildCommand(const std::string flag)
         }
         
 
-        // Ìí¼Ó JSON Êı¾İ
+        // æ·»åŠ  JSON æ•°æ®
         cmd << " -d " << (flag=="server"? gbktoutf8.convert (shellEscape( impl.m_jsonBody)) :shellEscape( impl.m_jsonBody));
     }
     
-    // °²È«Ñ¡Ïî
+    // å®‰å…¨é€‰é¡¹
     cmd << gbktoutf8.convert(" --compressed");
     cmd << gbktoutf8.convert(" --fail");
     cmd << gbktoutf8.convert(" --max-time 30");
     cmd << gbktoutf8.convert(" --connect-timeout 10");
-
    
-    impl.m_shellstr=std::move(cmd.str());
-    
+    impl.m_shellstr=std::move(cmd.str());    
             
 }
 
-std::string JsonRequestBuilder::getcmd()
+CString JsonRequestBuilder::getcmd()
 {
     Utf8ToGbkStrategy utf8togbk;
-    const auto& impl = *m_impl;
-    std::cout<< impl.m_shellstr<<std::endl;
-    std::string shellcmd = utf8togbk.convert(impl.m_shellstr);
-    return shellcmd;
+    std::string m_shellstr=m_impl->m_shellstr;
+    // std::cout<<"m_shellstr: "<< m_shellstr<<std::endl;
+    
+    return m_shellstr.empty() ? "" : utf8togbk.convert(m_shellstr);
 }
 
 void JsonRequestBuilderImpl::addToCurrent(JType type, const std::string &key, const std::string &val)
-{
+{ 
     if (type == _kObjectType)
     {
         rapidjson::Value k(key.c_str(), allocator);
@@ -354,7 +350,7 @@ void JsonRequestBuilderImpl::completeCurrentLevel()
     m_typeStack.pop();
     m_keyStack.pop();
 
-    // Ê¹ÓÃÉî¿½±´
+    // ä½¿ç”¨æ·±æ‹·è´
     rapidjson::Value completedValue;
     completedValue.CopyFrom(m_currentValue, allocator);
 
@@ -376,14 +372,14 @@ void JsonRequestBuilderImpl::completeCurrentLevel()
         m_doc.AddMember(k, completedValue, allocator);
     }
 
-    // ÖØÖÃµ±Ç°Öµ
+    // é‡ç½®å½“å‰å€¼
     if (m_typeStack.empty())
     {
         m_currentValue.SetObject();
     }
     else
     {
-        // ¶ÔÓÚÊı×é»ò¶ÔÏó£¬ĞèÒªÖØÖÃÎªÊÊµ±µÄÀàĞÍ
+        // å¯¹äºæ•°ç»„æˆ–å¯¹è±¡ï¼Œéœ€è¦é‡ç½®ä¸ºé€‚å½“çš„ç±»å‹
         if (m_typeStack.top() == _kObjectType)
         {
             m_currentValue.SetObject();
@@ -393,6 +389,31 @@ void JsonRequestBuilderImpl::completeCurrentLevel()
             m_currentValue.SetArray();
         }
     }
+}
+EIClass JsonRequestBuilder::execute(CString parserName ,int level=0)
+{
+    // å®é™…å‘é€HTTPè¯·æ±‚çš„é€»è¾‘
+    // è¿™é‡Œè¿”å›æ„å»ºçš„JSONä½œä¸ºç¤ºä¾‹
+    const auto& impl = *m_impl;
+    Utf8ToGbkStrategy utf8togbk;
+    EIClass ret;
+    Logger::getInstance().log("Begin to get request ->");
+    Process process(impl.m_shellstr);
+    std::string callret=process.readAll();
+    if(callret.empty())
+    {
+        Log::Trace("","","callret empty");
+        return ret;
+    }
+    std::string callretk=utf8togbk.convert(callret);   
+    Logger::getInstance().log("get request result ->",callretk);
+    
+    Logger::getInstance().log("Begin to convert Eiclas->");
+    EIClassBuilder eiclass( to_stdstring(parserName), level );
+    ret=  eiclass.fromJson(callretk);
+    Logger::getInstance().log("End to convert Eiclas-<");
+
+    return ret;
 }
 
 
@@ -415,16 +436,17 @@ int main() {
 
     builder.setUrl("https://api.example.com/data")
            .addHeader("Authorization", "Bearer token123")
-           .setJsonBody(R"({"name":"JohnÍõ","age":30})");
+           .setJsonBody(R"({"name":"Johnç‹","age":30})");
     
     
 
-      // ¹¹½¨ curl ÃüÁî
+      // æ„å»º curl å‘½ä»¤
     builder.buildCommand("server");
-    std::string command=builder.getcmd();
-    std::cout << "command: " << command << std::endl;
-    builder.execute();
-   
-
+    CString command=builder.getcmd();
+    Logger::getInstance().log("Command get ->",command);
+    EIClass ret;
+    ret=builder.execute("LevelParser",0);
+    
+    
     return 0;
 }
